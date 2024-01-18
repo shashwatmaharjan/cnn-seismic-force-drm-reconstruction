@@ -10,3 +10,5 @@ __MACOSX
 
 # Folders
 */data/*.mat
+*/scripts/generator/*.mat
+*/scripts/generator/*.m
