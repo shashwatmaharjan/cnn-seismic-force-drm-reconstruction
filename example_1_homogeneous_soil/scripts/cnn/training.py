@@ -179,6 +179,7 @@ def save_data(data, fileName, file_directory_to_save_data):
     print('Saved ' + fileName)
 
 
+# Main function
 def main():
 
     # Define file structure heirarchy
@@ -234,5 +235,8 @@ def main():
 
 if __name__ == '__main__':
 
+    # Clear the terminal
     os.system('clear')
+
+    # Call the main function
     main()
