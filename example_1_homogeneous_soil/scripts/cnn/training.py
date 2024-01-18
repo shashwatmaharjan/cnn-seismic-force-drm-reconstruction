@@ -226,6 +226,7 @@ def main():
     model.save(file_directory_to_save_results + '/trainedModel.h5')
     print('Saved trainedModel.h5 to %s.' %file_directory_to_save_results)
     
+    # Plot the training results
     plot = plots(history, file_directory_to_save_results)
     loss_plot = plot.loss()
     evaluation_metric_plot = plot.evaluation_metric()
