@@ -79,7 +79,7 @@ def main():
     print('Running dataAssembler.py')
 
     # Define the example name
-    example = 'example_1_homogeneous_soil'
+    example = 'example_2_heterogeneous_soil'
 
     # Assign the file directory as a string to a variable for re-usability
     main_file_directory = os.getcwd()
