@@ -15,7 +15,8 @@ plt.rcParams['font.family'] = 'serif'
 plt.rcParams['mathtext.fontset'] = 'dejavuserif'
 FONT_SIZE = 12
 
-# Get displacement and force data
+# Define necessary functions
+# Function to get the generated raw data
 def get_data(file_directory):
 
     # Get the training displacement data
@@ -45,9 +46,10 @@ def get_data(file_directory):
     return displacement_training_data, force_training_data, displacement_validation_data, force_validation_data, displacement_test_data, force_test_data
 
 
-# Define function to normalize the input and output dataset
+# Function to normalize the input and output dataset
 def normalize_data(data_used_to_normalize, data_to_be_normalized, type_of_data_subset):
 
+    # Normalize the data
     data_mean = np.mean(data_used_to_normalize)
     data_range = np.max(data_used_to_normalize) - np.min(data_used_to_normalize)
 
@@ -59,9 +61,10 @@ def normalize_data(data_used_to_normalize, data_to_be_normalized, type_of_data_s
     return normalized_data, normalizing_parameters
 
 
-# Define function to normalize the input and output dataset
+# Function to renormalize the input and output dataset
 def renormalize_data(data_used_to_renormalize, data_to_be_rennormalized, type_of_data_subset):
 
+    # Renormalize the data
     data_mean = np.mean(data_used_to_renormalize)
     data_range = np.max(data_used_to_renormalize) - np.min(data_used_to_renormalize)
 
@@ -72,12 +75,14 @@ def renormalize_data(data_used_to_renormalize, data_to_be_rennormalized, type_of
     return renormalized_data
 
 
+# Class to build the CNN model
 class CNN():
 
     def __init__(self, input_shape):
         
         self.input_shape = input_shape
     
+    # Method to build the CNN model
     def build_model(self):
 
         model = tf.keras.Sequential([
@@ -97,6 +102,7 @@ class CNN():
         return model
 
 
+# Class to plot the training results
 class plots:
     
     def __init__(self, history, file_directory):
@@ -105,6 +111,7 @@ class plots:
         self.file_directory = file_directory
         self.fontsize = 15
 
+    # Method to plot the loss
     def loss(self):
 
         loss_name = list(self.history.history.keys())[0]
@@ -125,6 +132,7 @@ class plots:
 
         return loss_plot
 
+    # Method to plot the evaluation metric
     def evaluation_metric(self):
 
         metric_name = list(self.history.history.keys())[1]
@@ -146,10 +154,13 @@ class plots:
         return metricPlot
 
 
+# Function to swap the sensor and timestep dimensions
 def swap_sensor_timestep(data):
 
+    # Create a new array to store the swapped data
     new_data = np.zeros((data.shape[0], data.shape[2], data.shape[1]))
 
+    # Swap the sensor and timestep dimensions
     for nSamples in range(new_data.shape[0]):
         for nSensors in range(new_data.shape[1]):
             for nTimesteps in range(new_data.shape[2]):
@@ -158,9 +169,11 @@ def swap_sensor_timestep(data):
     
     return new_data
 
-# Define function to save the dataset
+
+# Function to save the dataset
 def save_data(data, fileName, file_directory_to_save_data):
-    
+
+    # Save the data
     savemat(file_directory_to_save_data + '/' + fileName, {'data': data})
         
     print('Saved ' + fileName)
@@ -186,6 +199,7 @@ def main():
     displacement_test_data = normalize_data(data_used_to_normalize = displacement_training_data, data_to_be_normalized = displacement_test_data, type_of_data_subset = 'Displacement Test')[0]
     displacement_training_data, normalizing_displacement_parameters = normalize_data(data_used_to_normalize = displacement_training_data, data_to_be_normalized = displacement_training_data, type_of_data_subset = 'Displacement Training')
 
+    # Set the unnormalized force training dataset separately
     unnormalized_force_training = force_training_data
 
     # Normalize the force training datasets
@@ -193,13 +207,20 @@ def main():
     force_test_data = normalize_data(data_used_to_normalize = force_training_data, data_to_be_normalized = force_test_data, type_of_data_subset = 'Force Test')[0]
     force_training_data, normalizing_displacement_parameters = normalize_data(data_used_to_normalize = force_training_data, data_to_be_normalized = force_training_data, type_of_data_subset = 'Force Training')
 
-    epochs = 1
+    # Build the model
     model = CNN(displacement_training_data.shape[1:]).build_model()
+
+    # Compile the model
     model.compile(optimizer=optimizers.Adamax(learning_rate=0.001), loss='mae', metrics='mse')
 
+    # Print the model summary
     model.summary()
+
+    # Early stopping callback
     stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
-    history = model.fit(displacement_training_data, force_training_data, epochs=epochs, batch_size=16, callbacks=[stop_early], validation_data=(displacement_validation_data, force_validation_data))
+
+    # Train the model
+    history = model.fit(displacement_training_data, force_training_data, epochs=1, batch_size=16, callbacks=[stop_early], validation_data=(displacement_validation_data, force_validation_data))
 
     # Save the trained model
     model.save(file_directory_to_save_results + '/trainedModel.h5')
@@ -208,6 +229,7 @@ def main():
     plot = plots(history, file_directory_to_save_results)
     loss_plot = plot.loss()
     evaluation_metric_plot = plot.evaluation_metric()
+
 
 if __name__ == '__main__':
 
