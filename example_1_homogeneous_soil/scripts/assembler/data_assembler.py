@@ -10,71 +10,67 @@ from scipy.io import savemat
 from sklearn.model_selection import train_test_split
 
 # Define necessary functions
-# Get the generated raw data
-def get_data(fileDirectory, fileName):
+# Function to get the generated raw data
+def get_data(file_directory, file_name):
 
     # Load the data
-    data = loadmat(fileDirectory + '/' + fileName)
+    data = loadmat(file_directory + '/' + file_name)
     data = np.array(tuple(data.values()))
 
-    # Remove the unnecessary dimension
     data = np.squeeze(data)
 
     return data
 
-
-def data_skip(data, timeSkip):
+# Function to skip timesteps
+def data_skip(data, time_skip):
 
     # Take timesteps by skipping a few timesteps
-    return data[:, :, 1::timeSkip]
+    return data[:, :, 1::time_skip]
 
-
-# Define function to divide dataset into training, validation, and test dataset
-def dataset_divider(displacementData, forceData):
+# Function to divide dataset into training, validation, and test dataset
+def dataset_divider(displacement_data, force_data):
 
     # Split training data into 75%, 15%, and 10% respectively
-    displacementTrainingData, displacementTestData, forceTrainingData, forceTestData = train_test_split(displacementData, forceData, test_size=0.1, random_state=1)
-    displacementTrainingData, displacementValidationData, forceTrainingData, forceValidationData = train_test_split(displacementTrainingData, forceTrainingData, test_size=0.1, random_state=1)
+    displacement_training_data, displacement_test_data, force_training_data, force_test_data = train_test_split(displacement_data, force_data, test_size=0.1, random_state=1)
+    displacement_training_data, displacement_validation_data, force_training_data, force_validation_data = train_test_split(displacement_training_data, force_training_data, test_size=0.1, random_state=1)
 
-    return displacementTrainingData, forceTrainingData, displacementValidationData, forceValidationData, displacementTestData, forceTestData 
+    return displacement_training_data, force_training_data, displacement_validation_data, force_validation_data, displacement_test_data, force_test_data 
 
 # Define a function that switches the position of sensors and timesteps for training
 def swap_sensor_timestep_dimension(data):
 
     # Get the number of samples, sensors, and timesteps
-    numSamples = data.shape[0]
-    numSensors = data.shape[1]
-    numTimestep = data.shape[2]
+    num_samples = data.shape[0]
+    num_sensors = data.shape[1]
+    num_timestep = data.shape[2]
 
     # Create an empty array to store the swapped data
-    swappedData = np.zeros((numSamples, numTimestep, numSensors))
+    swapped_data = np.zeros((num_samples, num_timestep, num_sensors))
 
     # Swap the position of sensors and timesteps
-    for nSamples in range(numSamples):
+    for n_sample in range(num_samples):
 
-        for nSensors in range(numSensors):
+        for n_sensor in range(num_sensors):
 
-            for nTimesteps in range(numTimestep):
+            for n_timestep in range(num_timestep):
 
-                swappedData[nSamples, nTimesteps, nSensors] = data[nSamples, nSensors, nTimesteps]
+                swapped_data[n_sample, n_timestep, n_sensor] = data[n_sample, n_sensor, n_timestep]
     
-    return swappedData
+    return swapped_data
 
 
 # Define function to save the dataset
-def save_data(data, fileName, file_directory_to_save_data):
+def save_data(data, file_name, file_directory_to_save_data):
 
-    # Save the data
-    # Check if the file is a pickle file or a mat file
-    if fileName[-4:] == '.pkl':
+    if file_name[-4:] == '.pkl':
 
-        with open(file_directory_to_save_data + fileName, 'wb') as handle:
+        with open(file_directory_to_save_data + file_name, 'wb') as handle:
             pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    elif fileName[-4:] == '.mat':
-        savemat(file_directory_to_save_data + '/' + fileName, {'data': data})
+    elif file_name[-4:] == '.mat':
+        savemat(file_directory_to_save_data + '/' + file_name, {'data': data})
         
-    print('Saved ' + fileName)
+    print('Saved ' + file_name)
 
 
 # Define main function
@@ -82,45 +78,46 @@ def main():
 
     print('Running dataAssembler.py')
 
+    # Define the example name
+    example = 'example_1_homogeneous_soil'
+
     # Assign the file directory as a string to a variable for re-usability
-    mainFileDirectory = 'YOUR_FILE_DIRECTORY'
-    generatedDataFileDirectory = mainFileDirectory + '/generateDataset'
-    fileDirectoryToSaveData = mainFileDirectory + '/dividedDataset'
+    main_file_directory = os.getcwd()
+    generated_data_file_directory = os.path.join(main_file_directory, example, 'data', 'generated')
+    file_directory_to_save_data = os.path.join(main_file_directory, example, 'data', 'assembled')
 
     # Get displacement and force data
-    displacementData = get_data(generatedDataFileDirectory, 'u_history.mat')
-    forceData = get_data(generatedDataFileDirectory, 'F_history.mat')
+    displacement_data = get_data(generated_data_file_directory, 'u_history.mat')
+    force_data = get_data(generated_data_file_directory, 'F_history.mat')
 
     # To provide as close of a one-to-one ratio, take timesteps by skipping a few timesteps
-    # displacementData = data_skip(displacementData, 3)
-    # forceData = data_skip(forceData, 3)
+    # displacement_data = data_skip(displacement_data, 3)
+    # force_data = data_skip(force_data, 3)
 
     # Save the meta data containing information about the displacement and force dataset
-    metadata = {'displacement': {'samples': np.shape(displacementData)[0], 'sensors': np.shape(displacementData)[1], 'timesteps': np.shape(displacementData)[2]},
-                'force': {'samples': np.shape(forceData)[0], 'sensors': np.shape(forceData)[1], 'timesteps': np.shape(forceData)[2]}}
+    metadata = {'displacement': {'samples': np.shape(displacement_data)[0], 'sensors': np.shape(displacement_data)[1], 'timesteps': np.shape(displacement_data)[2]},
+                'force': {'samples': np.shape(force_data)[0], 'sensors': np.shape(force_data)[1], 'timesteps': np.shape(force_data)[2]}}
     print('\nSaving metadata...')
-    save_data(metadata, '/metadataInitialData.pkl', fileDirectoryToSaveData)
+    save_data(metadata, '/metadataInitialData.pkl', file_directory_to_save_data)
 
     # Divide the data into training, validation, and test dataset
-    displacementTrainingData, forceTrainingData, displacementValidationData, forceValidationData, displacementTestData, forceTestData = dataset_divider(displacementData, forceData)
+    displacement_training_data, force_training_data, displacement_validation_data, force_validation_data, displacement_test_data, force_test_data = dataset_divider(displacement_data, force_data)
 
-    # Swap the position of sensors and timesteps for training
-    displacementTrainingData = swap_sensor_timestep_dimension(displacementTrainingData)
-    displacementValidationData = swap_sensor_timestep_dimension(displacementValidationData)
-    displacementTestData = swap_sensor_timestep_dimension(displacementTestData)
+    displacement_training_data = swap_sensor_timestep_dimension(displacement_training_data)
+    displacement_validation_data = swap_sensor_timestep_dimension(displacement_validation_data)
+    displacement_test_data = swap_sensor_timestep_dimension(displacement_test_data)
 
-    # Swap the position of sensors and timesteps for training
-    forceTrainingData = swap_sensor_timestep_dimension(forceTrainingData)
-    forceValidationData = swap_sensor_timestep_dimension(forceValidationData)
-    forceTestData = swap_sensor_timestep_dimension(forceTestData)
+    force_training_data = swap_sensor_timestep_dimension(force_training_data)
+    force_validation_data = swap_sensor_timestep_dimension(force_validation_data)
+    force_test_data = swap_sensor_timestep_dimension(force_test_data)
 
-    # Save the dataset
-    save_data(displacementTrainingData, 'displacementTrainingData.mat', fileDirectoryToSaveData)
-    save_data(forceTrainingData, 'forceTrainingData.mat', fileDirectoryToSaveData)
-    save_data(displacementValidationData, 'displacementValidationData.mat', fileDirectoryToSaveData)
-    save_data(forceValidationData, 'forceValidationData.mat', fileDirectoryToSaveData)
-    save_data(displacementTestData, 'displacementTestData.mat', fileDirectoryToSaveData)
-    save_data(forceTestData, 'forceTestData.mat', fileDirectoryToSaveData)
+    save_data(displacement_training_data, 'displacement_training_data.mat', file_directory_to_save_data)
+    save_data(force_training_data, 'force_training_data.mat', file_directory_to_save_data)
+    save_data(displacement_validation_data, 'displacement_validation_data.mat', file_directory_to_save_data)
+    save_data(force_validation_data, 'force_validation_data.mat', file_directory_to_save_data)
+    save_data(displacement_test_data, 'displacement_test_data.mat', file_directory_to_save_data)
+    save_data(force_test_data, 'force_test_data.mat', file_directory_to_save_data)
+
 
 if __name__ == '__main__':
 
